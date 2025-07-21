@@ -1,0 +1,27 @@
+{
+  "name": "kodecamp-task-4",
+  "version": "1.0.0",
+  "description": "task 4",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test:class": "jest",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Damian",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "jest": "^30.0.4",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.16.4",
+    "multer": "^2.0.2",
+    "nodemailer": "^7.0.5",
+    "nodemon": "^3.1.10",
+    "uuid": "^11.1.0"
+  }
+}
