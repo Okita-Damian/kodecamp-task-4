@@ -6,10 +6,6 @@ const schema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    otpToken: {
-      type: String,
-      required: true,
-    },
     userId: {
       type: mongoose.Types.ObjectId,
       ref: "users",
@@ -29,6 +25,6 @@ const schema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const otpModel = mongoose.model("otps", schema);
+const otpModel = mongoose.model("otp", schema);
 
 module.exports = otpModel;

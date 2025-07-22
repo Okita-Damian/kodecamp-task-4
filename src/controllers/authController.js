@@ -1,6 +1,5 @@
 const { registerSchema, loginSchema } = require("../validation/userValidation");
 const bcrypt = require("bcryptjs");
-const { v4 } = require("uuid");
 const jwt = require("jsonwebtoken");
 const AppError = require("../utils/appError");
 
@@ -10,10 +9,7 @@ const sendEmail = require("../utils/sendEmail");
 const asyncHandler = require("../middlewares/asyncHandler");
 const otpModel = require("../models/otpModel");
 
-// ===== IMPORTANT MESSAGE =====
-// i hashed my OTP but once you run the code and register a user, you  will get  the verification OTP in the terminal
-
-// ===== REGISTER FUNCTION =====
+// ========== REGISTER ==========
 exports.register = asyncHandler(async (req, res, next) => {
   const { error, value } = registerSchema.validate(req.body);
   if (error) return next(new AppError(error.details[0].message, 400));
@@ -22,8 +18,6 @@ exports.register = asyncHandler(async (req, res, next) => {
   if (emailExists) return next(new AppError("Email already exists", 409));
 
   const hashedPassword = await bcrypt.hash(value.password, 10);
-
-  //malkes the 1st register the admin automaticallly
   const isFirstUser = (await User.countDocuments()) === 0;
 
   const newUser = await User.create({
@@ -34,16 +28,11 @@ exports.register = asyncHandler(async (req, res, next) => {
   });
 
   const otp = generateOTP();
-  if (process.env.NODE_ENV !== "production") {
-    console.log("OTP:", otp);
-  }
 
   const hashedOTP = await bcrypt.hash(String(otp), 10);
-  const generateOTPToken = v4();
 
   await otpModel.create({
     otp: hashedOTP,
-    otpToken: generateOTPToken,
     userId: newUser._id,
     purpose: "verify-email",
     expiresAt: new Date(Date.now() + 10 * 60 * 1000),
@@ -54,20 +43,18 @@ exports.register = asyncHandler(async (req, res, next) => {
     to: value.email,
     subject: "Verify your email",
     html: `<div>
-                <h1>Verify Email</h1>
-                <p>Your OTP is: <strong>${otp}</strong></p>
-            </div>`,
+             <h1>Verify Email</h1>
+             <p>Your OTP is: <strong>${otp}</strong></p>
+           </div>`,
   });
 
   res.status(201).json({
     status: "success",
-    message: "User created successfully. Please check your email for the OTP.",
-    otpToken: generateOTPToken,
-    purpose: "verify-email",
+    message: "User created. OTP sent to email.",
   });
 });
 
-// ===== VERIFY OTP FUNCTION =====
+// ========== VERIFY OTP ==========
 exports.verifyOtp = asyncHandler(async (req, res, next) => {
   const { email, otp } = req.body;
 
@@ -90,12 +77,10 @@ exports.verifyOtp = asyncHandler(async (req, res, next) => {
   const isMatch = await bcrypt.compare(String(otp), otpDetails.otp);
   if (!isMatch) return next(new AppError("Invalid OTP", 400));
 
-  // Update user email verification
   await User.findByIdAndUpdate(user._id, {
     isEmailVerified: true,
   });
 
-  // Delete OTP after success
   await otpModel.deleteOne({ _id: otpDetails._id });
 
   res.json({
@@ -104,7 +89,7 @@ exports.verifyOtp = asyncHandler(async (req, res, next) => {
   });
 });
 
-// ===== RESEND OTP FUNCTION =====
+// ========== RESEND OTP ==========
 exports.resendOtp = asyncHandler(async (req, res, next) => {
   const { email, purpose } = req.body;
 
@@ -113,7 +98,6 @@ exports.resendOtp = asyncHandler(async (req, res, next) => {
   }
 
   const normalizedPurpose = purpose.toLowerCase();
-
   if (!["verify-email", "reset-password"].includes(normalizedPurpose)) {
     return next(new AppError("Invalid OTP purpose", 400));
   }
@@ -140,25 +124,22 @@ exports.resendOtp = asyncHandler(async (req, res, next) => {
         new AppError(
           `Please wait ${Math.ceil(
             30 - timeSinceLastOtp
-          )} seconds before requesting another OTP.`
+          )}s before requesting another OTP.`
         )
       );
     }
-    // Delete the old OTP so a new one can be created
     await otpModel.deleteOne({ _id: existingOtp._id });
   }
 
-  // Generate and send new OTP
   const otp = generateOTP();
   if (process.env.NODE_ENV !== "production") {
-    console.log("OTP:", otp);
+    //console.log("OTP:", otp);
   }
+
   const hashedOTP = await bcrypt.hash(String(otp), 10);
-  const otpToken = v4();
 
   await otpModel.create({
     otp: hashedOTP,
-    otpToken,
     userId: user._id,
     purpose: normalizedPurpose,
     expiresAt: new Date(Date.now() + 10 * 60 * 1000),
@@ -176,12 +157,11 @@ exports.resendOtp = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "New OTP sent successfully. Please check your email.",
-    otpToken,
-    purpose: normalizedPurpose,
+    message: "OTP sent to email successfully.",
   });
 });
 
+// ========== LOGIN ==========
 exports.login = asyncHandler(async (req, res, next) => {
   const { error, value } = loginSchema.validate(req.body);
   if (error) return next(new AppError(error.details[0].message, 400));
@@ -189,13 +169,13 @@ exports.login = asyncHandler(async (req, res, next) => {
   const { email, password } = value;
 
   const user = await User.findOne({ email }).select("+password");
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return next(new AppError("Incorrect email or password", 401));
+  }
 
-  if (!user || !(await bcrypt.compare(password, user.password)))
-    return next(new AppError("incorrect email or password", 401));
-
-  //check if email is confrimed
-  if (!user.isEmailVerified)
-    return next(new AppError("Please verify your email before logging", 403));
+  if (!user.isEmailVerified) {
+    return next(new AppError("Please verify your email first", 403));
+  }
 
   const token = jwt.sign(
     {
@@ -209,7 +189,7 @@ exports.login = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "login successuful",
+    message: "Login successful",
     token,
     user: {
       id: user._id,
