@@ -24,7 +24,7 @@ exports.register = asyncHandler(async (req, res, next) => {
     fullName: value.fullName,
     email: value.email,
     password: hashedPassword,
-    role: isFirstUser ? "admin" : "customer",
+    role: isFirstUser ? "admin" : "Customer",
   });
 
   const otp = generateOTP();
@@ -50,7 +50,7 @@ exports.register = asyncHandler(async (req, res, next) => {
 
   res.status(201).json({
     status: "success",
-    message: "User created. OTP sent to email.",
+    message: "Customer created. OTP sent to email.",
   });
 });
 
@@ -63,7 +63,7 @@ exports.verifyOtp = asyncHandler(async (req, res, next) => {
   }
 
   const user = await User.findOne({ email });
-  if (!user) return next(new AppError("User not found", 404));
+  if (!user) return next(new AppError("Customer not found", 404));
 
   const otpDetails = await otpModel.findOne({
     userId: user._id,
@@ -85,7 +85,7 @@ exports.verifyOtp = asyncHandler(async (req, res, next) => {
 
   res.json({
     status: "success",
-    message: "Email verified successfully.",
+    message: " Customer email verified successfully.",
   });
 });
 
@@ -103,7 +103,7 @@ exports.resendOtp = asyncHandler(async (req, res, next) => {
   }
 
   const user = await User.findOne({ email });
-  if (!user) return next(new AppError("User not found", 404));
+  if (!user) return next(new AppError("Customer not found", 404));
 
   if (normalizedPurpose === "verify-email" && user.isEmailVerified) {
     return next(new AppError("Email is already verified", 400));
@@ -157,7 +157,7 @@ exports.resendOtp = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "OTP sent to email successfully.",
+    message: "Customer OTP sent to email successfully.",
   });
 });
 

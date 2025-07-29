@@ -13,7 +13,7 @@ exports.authenticate = asyncHandler(async (req, res, next) => {
   const decoded = jwt.verify(token, process.env.JWT_KEY);
 
   const user = await User.findById(decoded.userId);
-  if (!user) return next(new AppError("User not found", 401));
+  if (!user) return next(new AppError("Customer not found", 401));
 
   req.user = user;
   next();
