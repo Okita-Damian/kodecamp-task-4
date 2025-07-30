@@ -15,7 +15,7 @@ app.use(express.json());
 app.use("/products", productRoutes);
 app.use("/auth", authRoutes);
 
-app.use("/admin", adminRoutes);
+app.use("/auth", adminRoutes);
 
 // cath invalid routes
 app.all("/*splat", (req, res, next) => {
