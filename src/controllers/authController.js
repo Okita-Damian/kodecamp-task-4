@@ -184,7 +184,7 @@ exports.login = asyncHandler(async (req, res, next) => {
       role: user.role,
     },
     process.env.JWT_KEY,
-    { expiresIn: "15m" }
+    { expiresIn: "2h" }
   );
 
   res.status(200).json({

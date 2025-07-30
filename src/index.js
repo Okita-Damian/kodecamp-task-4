@@ -7,12 +7,15 @@ const productRoutes = require("./routes/productRoutes");
 const authRoutes = require("./routes/authRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 const AppError = require("./utils/appError");
+const adminRoutes = require("./routes/adminRoutes");
 
 app.use(express.json());
 
 // Routes
 app.use("/products", productRoutes);
 app.use("/auth", authRoutes);
+
+app.use("/admin", adminRoutes);
 
 // cath invalid routes
 app.all("/*splat", (req, res, next) => {
