@@ -8,7 +8,7 @@ const schema = new mongoose.Schema(
     },
     userId: {
       type: mongoose.Types.ObjectId,
-      ref: "Customer",
+      ref: "customer",
       required: true,
     },
     purpose: {

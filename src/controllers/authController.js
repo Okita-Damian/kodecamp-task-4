@@ -18,13 +18,12 @@ exports.register = asyncHandler(async (req, res, next) => {
   if (emailExists) return next(new AppError("Email already exists", 409));
 
   const hashedPassword = await bcrypt.hash(value.password, 10);
-  const isFirstUser = (await User.countDocuments()) === 0;
 
   const newUser = await User.create({
     fullName: value.fullName,
     email: value.email,
     password: hashedPassword,
-    role: isFirstUser ? "admin" : "Customer",
+    role: value.role?.toLowerCase() || "customer",
   });
 
   const otp = generateOTP();
@@ -50,7 +49,7 @@ exports.register = asyncHandler(async (req, res, next) => {
 
   res.status(201).json({
     status: "success",
-    message: "Customer created. OTP sent to email.",
+    message: "customer created. OTP sent to email.",
   });
 });
 
@@ -63,7 +62,7 @@ exports.verifyOtp = asyncHandler(async (req, res, next) => {
   }
 
   const user = await User.findOne({ email });
-  if (!user) return next(new AppError("Customer not found", 404));
+  if (!user) return next(new AppError("customer not found", 404));
 
   const otpDetails = await otpModel.findOne({
     userId: user._id,
@@ -85,7 +84,7 @@ exports.verifyOtp = asyncHandler(async (req, res, next) => {
 
   res.json({
     status: "success",
-    message: " Customer email verified successfully.",
+    message: " customer email verified successfully.",
   });
 });
 
@@ -103,7 +102,7 @@ exports.resendOtp = asyncHandler(async (req, res, next) => {
   }
 
   const user = await User.findOne({ email });
-  if (!user) return next(new AppError("Customer not found", 404));
+  if (!user) return next(new AppError("customer not found", 404));
 
   if (normalizedPurpose === "verify-email" && user.isEmailVerified) {
     return next(new AppError("Email is already verified", 400));
@@ -157,7 +156,7 @@ exports.resendOtp = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Customer OTP sent to email successfully.",
+    message: "customer OTP sent to email successfully.",
   });
 });
 
