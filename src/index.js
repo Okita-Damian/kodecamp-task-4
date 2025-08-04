@@ -5,6 +5,7 @@ require("dotenv").config();
 
 const productRoutes = require("./routes/productRoutes");
 const authRoutes = require("./routes/authRoutes");
+const brandRoutes = require("./routes/brandRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 const AppError = require("./utils/appError");
 
@@ -13,6 +14,7 @@ app.use(express.json());
 // Routes
 app.use("/products", productRoutes);
 app.use("/auth", authRoutes);
+app.use("brands", brandRoutes);
 
 // cath invalid routes
 app.all("/*splat", (req, res, next) => {

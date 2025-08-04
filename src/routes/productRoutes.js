@@ -4,6 +4,11 @@ const router = express.Router();
 const ProductController = require("../controllers/productController");
 const { authenticate, restrictTo } = require("../middlewares/auth");
 
+router.get(
+  "/products/:brand/:page/:limit",
+  ProductController.getProductsByBrand
+);
+
 router.get("/", ProductController.getAllProducts);
 
 router.get("/:id", ProductController.getProductById);

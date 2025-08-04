@@ -23,24 +23,63 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
 
 // Get all products with pagination
 exports.getAllProducts = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 10;
-  const skip = (page - 1) * limit;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
 
-  const products = await Product.find()
-    .populate("ownerId", "fullName email")
-    .skip(skip)
-    .limit(limit)
-    .sort({ createdAt: -1 }); // sort by newest first
+  const options = {
+    page,
+    limit,
+    populate: { path: "brand", select: "brandName" },
+    sort: { createdAt: -1 },
+  };
 
-  const totalProducts = await Product.countDocuments();
+  const result = await Product.paginate({}, options);
 
   res.status(200).json({
     status: "success",
-    results: products.length,
-    totalPages: Math.ceil(totalProducts / limit),
-    currentPage: page,
-    data: products,
+    totalDocs: result.totalDocs,
+    totalPages: result.totalPages,
+    currentPage: result.page,
+    results: result.docs.length,
+    data: result.docs,
+  });
+});
+
+// Get all product by Brand
+exports.getProductsByBrand = asyncHandler(async (req, res, next) => {
+  const { brand, page, limit } = req.params;
+
+  let brandFilter;
+
+  // Check if brand is an ID or brandName
+  if (brand.match(/^[0-9a-fA-F]{24}$/)) {
+    brandFilter = { brand };
+  } else {
+    const brandDoc = await Brand.findOne({
+      brandName: new RegExp(`^${brand}$`, "i"),
+    });
+    if (!brandDoc) {
+      return next(new AppError("Brand not found", 404));
+    }
+    brandFilter = { brand: brandDoc._id };
+  }
+
+  const options = {
+    page: parseInt(page) || 1,
+    limit: parseInt(limit) || 10,
+    populate: { path: "brand", select: "brandName" },
+    sort: { createdAt: -1 },
+  };
+
+  const result = await Product.paginate(brandFilter, options);
+
+  res.status(200).json({
+    status: "success",
+    totalDocs: result.totalDocs,
+    totalPages: result.totalPages,
+    currentPage: result.page,
+    results: result.docs.length,
+    data: result.docs,
   });
 });
 
