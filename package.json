@@ -17,6 +17,7 @@
     "express": "^5.1.0",
     "jest": "^30.0.4",
     "joi": "^17.13.3",
+    "joi-objectid": "^4.0.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.4",
     "mongoose-paginate-v2": "^1.9.1",

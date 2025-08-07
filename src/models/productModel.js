@@ -8,6 +8,7 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: [true, "Product name is required"],
       trim: true,
+      unique: true,
     },
     brand: {
       type: mongoose.Schema.Types.ObjectId,

@@ -4,12 +4,7 @@ const router = express.Router();
 const ProductController = require("../controllers/productController");
 const { authenticate, restrictTo } = require("../middlewares/auth");
 
-router.get(
-  "/products/:brand/:page/:limit",
-  ProductController.getProductsByBrand
-);
-
-router.get("/", ProductController.getAllProducts);
+router.get("/", ProductController.getFilteredProducts);
 
 router.get("/:id", ProductController.getProductById);
 
@@ -20,7 +15,12 @@ router.post(
   ProductController.createProduct
 );
 
-router.put("/:id", authenticate, ProductController.updateProduct);
+router.put(
+  "/:id",
+  authenticate,
+  restrictTo("admin"),
+  ProductController.updateProduct
+);
 
 router.delete(
   "/:id",

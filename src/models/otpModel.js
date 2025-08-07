@@ -18,7 +18,7 @@ const schema = new mongoose.Schema(
     },
     expiresAt: {
       type: Date,
-      default: () => Date.now() + 10 * 60 * 1000,
+      default: () => Date.now() + 60 * 60 * 1000,
       expires: 0,
     },
   },

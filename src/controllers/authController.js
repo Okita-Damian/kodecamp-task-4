@@ -127,7 +127,8 @@ exports.resendOtp = asyncHandler(async (req, res, next) => {
         )
       );
     }
-    await otpModel.deleteOne({ _id: existingOtp._id });
+    existingOtp.expiresAt = new Date(Date.now()); // sets it to now = expired
+    await existingOtp.save();
   }
 
   const otp = generateOTP();
@@ -141,7 +142,7 @@ exports.resendOtp = asyncHandler(async (req, res, next) => {
     otp: hashedOTP,
     userId: user._id,
     purpose: normalizedPurpose,
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000),
   });
 
   await sendEmail({
@@ -183,7 +184,7 @@ exports.login = asyncHandler(async (req, res, next) => {
       role: user.role,
     },
     process.env.JWT_KEY,
-    { expiresIn: "2h" }
+    { expiresIn: "1h" }
   );
 
   res.status(200).json({
