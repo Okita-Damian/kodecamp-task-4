@@ -1,3 +1,4 @@
+// middleware/errorHandler.js
 const errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || 500;
   let message = err.message || "Internal Server Error";
@@ -19,24 +20,10 @@ const errorHandler = (err, req, res, next) => {
     statusCode = 400;
   }
 
-  // Handle invalid ObjectId (CastError)
-  if (err.name === "CastError") {
-    message = `Invalid ${err.path}: ${err.value}`;
-    statusCode = 400;
-  }
-
-  // Handle Joi validation errors
-  if (err.isJoi) {
-    message = err.details.map((d) => d.message).join(", ");
-    statusCode = 400;
-  }
-
   res.status(statusCode).json({
     success: false,
     status: "error",
     message,
-    // Only include stack trace in development
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
   });
 };
 
