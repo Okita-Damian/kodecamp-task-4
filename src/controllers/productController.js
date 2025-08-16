@@ -7,6 +7,8 @@ const {
 const asyncHandler = require("../middlewares/asyncHandler");
 const AppError = require("../utils/appError");
 
+// post request for customers
+
 // Create a new product
 exports.createProduct = asyncHandler(async (req, res, next) => {
   const { error, value } = productSchema.validate(req.body);
@@ -213,4 +215,3 @@ exports.deleteProduct = asyncHandler(async (req, res, next) => {
 
   res.status(204).send();
 });
-console.log("Exports:", module.exports);
