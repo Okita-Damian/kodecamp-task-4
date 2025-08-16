@@ -1,8 +1,9 @@
+const Joi = require("joi");
 const Order = require("../models/orderModel");
 const Product = require("../models/productModel");
 const asyncHandler = require("../middlewares/asyncHandler");
 const AppError = require("../utils/appError");
-const objectIdValidator = require("../utils/objectId");
+const objectIdValidator = require("../utils/objectIdValidator");
 
 // Create order (customer only)
 exports.createOrder = asyncHandler(async (req, res, next) => {
@@ -153,11 +154,9 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
 
   if (!order) return next(new AppError("Order not found", 404));
 
-  res
-    .status(200)
-    .json({
-      status: "success",
-      data: order,
-      message: "Order status updated successfully",
-    });
+  res.status(200).json({
+    status: "success",
+    data: order,
+    message: "Order status updated successfully",
+  });
 });

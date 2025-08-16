@@ -1,6 +1,5 @@
 const Joi = require("joi");
 const objectIdValidator = require("../utils/objectIdValidator");
-
 // Schema for creating an order (customer)
 const createOrderSchema = Joi.object({
   products: Joi.array()
