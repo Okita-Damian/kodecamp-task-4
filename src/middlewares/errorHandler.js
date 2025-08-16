@@ -12,11 +12,24 @@ const errorHandler = (err, req, res, next) => {
     statusCode = 400;
   }
 
-  // Handle Mongoose validation errors
+  // Handle Mongoose validation errors safely
   if (err.name === "ValidationError") {
-    message = Object.values(err.errors)
+    const errors = err.errors || {};
+    message = Object.values(errors)
       .map((val) => val.message)
       .join(", ");
+    statusCode = 400;
+  }
+
+  // handle invalid ObjectId (CastError)
+  if (err.name === "CastError") {
+    message = `Invalid ${err.path}: ${err.value}`;
+    statusCode = 400;
+  }
+
+  //handle Joi validation errors
+  if (err.isJoi) {
+    message = err.details.map((d) => d.message).join(", ");
     statusCode = 400;
   }
 
@@ -24,6 +37,7 @@ const errorHandler = (err, req, res, next) => {
     success: false,
     status: "error",
     message,
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
   });
 };
 

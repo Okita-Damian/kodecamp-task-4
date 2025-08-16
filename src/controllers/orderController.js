@@ -1,9 +1,9 @@
 const Joi = require("joi");
+const joiObjectid = require("joi-objectId")(Joi);
 const Order = require("../models/orderModel");
 const Product = require("../models/productModel");
 const asyncHandler = require("../middlewares/asyncHandler");
 const AppError = require("../utils/appError");
-const objectIdValidator = require("../utils/objectIdValidator");
 
 // Create order (customer only)
 exports.createOrder = asyncHandler(async (req, res, next) => {
@@ -89,7 +89,7 @@ exports.getAllOrders = asyncHandler(async (req, res, next) => {
 });
 
 const idSchema = Joi.object({
-  id: Joi.string().custom(objectIdValidator).required(),
+  id: joiObjectid().required(),
 });
 
 // Admin & customer: view a single order
