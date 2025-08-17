@@ -4,53 +4,32 @@ const Order = require("../models/orderModel");
 const Product = require("../models/productModel");
 const asyncHandler = require("../middlewares/asyncHandler");
 const AppError = require("../utils/appError");
+const { createOrderSchema } = require("../validation/orderValidation");
 
 // Create order (customer only)
 exports.createOrder = asyncHandler(async (req, res, next) => {
-  const { items } = req.body;
-
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    return next(new AppError("Order items are required", 400));
-  }
-
-  // Extract product IDs from items
-  const productIds = items.map((item) => item.productId);
-
-  // Find all valid product IDs from DB
-  const validProducts = await Product.find({ _id: { $in: productIds } });
-
-  if (validProducts.length !== productIds.length) {
-    return next(new AppError("One or more product IDs are invalid", 400));
-  }
-
-  // calculate total cost dynamically from DB
-  let totalCost = 0;
-  items.forEach((item) => {
-    const product = validProducts.find(
-      (p) => p._id.toString() === item.productId.toString()
-    );
-    if (product) {
-      totalCost += product.cost * item.quantity;
-    }
-  });
+  const { error, value } = createOrderSchema.validate(req.body);
+  if (error) return next(new AppError(error.details[0].message, 400));
 
   // Create order
   const order = await Order.create({
     customerId: req.user._id,
-    products: items,
-    totalCost,
-    shippingStatus: "pending",
+    items: value.items,
   });
 
+  await order.populate("items.productId");
+  x;
   res.status(201).json({
     status: "success",
     message: "Order created successfully",
+    orderId: order.orderId,
+    totalOrderCost: order.totalOrderCost,
     data: order,
   });
 });
 
 // Get all orders with pagination + filtering (Admin only)
-exports.getAllOrders = asyncHandler(async (req, res, next) => {
+exports.getAllOrders = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, status, productName } = req.query;
 
   const query = {};
@@ -59,7 +38,7 @@ exports.getAllOrders = asyncHandler(async (req, res, next) => {
   let productFilter = {};
   if (productName) {
     productFilter = {
-      "products.productId": {
+      "items.productId": {
         $in: await Product.find({
           productName: { $regex: productName, $options: "i" },
         }).distinct("_id"),
@@ -71,7 +50,7 @@ exports.getAllOrders = asyncHandler(async (req, res, next) => {
 
   const orders = await Order.find({ ...query, ...productFilter })
     .populate("customerId")
-    .populate("products.productId")
+    .populate("items.productId")
     .skip(skip)
     .limit(Number(limit))
     .sort({ createdAt: -1 });
@@ -84,7 +63,11 @@ exports.getAllOrders = asyncHandler(async (req, res, next) => {
     page: Number(page),
     pages: Math.ceil(total / limit),
     results: orders.length,
-    data: orders,
+    data: orders.map((order) => ({
+      orderId: order.orderId,
+      totalOrderCost: order.totalOrderCost,
+      ...order.toObject(),
+    })),
   });
 });
 
@@ -99,64 +82,74 @@ exports.getOrderById = asyncHandler(async (req, res, next) => {
 
   const order = await Order.findById(req.params.id)
     .populate("customerId")
-    .populate("products.productId");
+    .populate("items.productId");
 
   if (!order) return next(new AppError("Order not found", 404));
 
-  res.status(200).json({ status: "success", data: order });
+  res.status(200).json({
+    status: "success",
+    data: {
+      orderId: order.orderId,
+      totalOrderCost: order.totalOrderCost,
+      ...order.toObject(),
+    },
+  });
 });
 
 // Get logged-in customer's orders
-exports.getMyOrders = asyncHandler(async (req, res, next) => {
-  const { page = 1, limit = 10, productName, status } = req.query;
+exports.getMyOrders = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const customerId = req.user._id;
 
-  const query = { customerId: req.user._id };
-  if (status) query.status = status;
+  const order = await Order.findOne({ orderId, customerId }).populate(
+    "items.productId"
+  );
 
-  let productFilter = {};
-  if (productName) {
-    productFilter = {
-      "products.productId": {
-        $in: await Product.find({
-          productName: { $regex: productName, $options: "i" },
-        }).distinct("_id"),
-      },
-    };
+  if (!order) {
+    return res.status(404).json({
+      success: false,
+      message: "Order not found for this customer",
+    });
   }
-
-  const skip = (page - 1) * limit;
-
-  const orders = await Order.find({ ...query, ...productFilter })
-    .populate("products.productId")
-    .skip(skip)
-    .limit(Number(limit))
-    .sort({ createdAt: -1 });
-
-  const total = await Order.countDocuments({ ...query, ...productFilter });
-
   res.status(200).json({
-    status: "success",
-    total,
-    page: Number(page),
-    pages: Math.ceil(total / limit),
-    results: orders.length,
-    data: orders,
+    success: true,
+    data: {
+      orderId: order.orderId,
+      totalOrderCost: order.totalOrderCost,
+      shippingStatus: order.shippingStatus,
+      items: order.items.map((i) => ({
+        productId: i.productId._id,
+        productName: i.productName || i.productId.productName,
+        quantity: i.quantity,
+        totalCost: i.totalCost,
+        ownerId: i.ownerId,
+      })),
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+    },
   });
 });
 
 // Admin: update shipping status
 exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
+  const { shippingStatus } = req.body;
+  const { id } = req.params;
+
   const order = await Order.findByIdAndUpdate(
-    req.params.id,
-    { shippingStatus: req.body.shippingStatus },
-    { new: true }
+    id,
+    { shippingStatus },
+    { new: true, runValidators: true }
   );
 
   if (!order) return next(new AppError("Order not found", 404));
 
   res.status(200).json({
     status: "success",
-    data: order,
     message: "Order status updated successfully",
+    data: {
+      orderId: order.orderId,
+      totalOrderCost: order.totalOrderCost,
+      ...order.toObject(),
+    },
   });
 });

@@ -1,30 +1,43 @@
-const BaseJoi = require("joi");
-const JoiObjectId = require("joi-objectid")(BaseJoi);
-const Joi = BaseJoi;
+const Joi = require("joi");
+const objectIdValidator = require("../utils/objectIdValidator");
 
-// Schema for creating an order
+// Create order (customer)
 const createOrderSchema = Joi.object({
-  products: Joi.array()
+  items: Joi.array()
     .items(
       Joi.object({
-        productName: Joi.string().trim().required(),
-        productId: JoiObjectId().required(), // validated ObjectId
-        quantity: Joi.number().integer().min(1).required(),
-        totalCost: Joi.number().positive().required(),
-        shippingStatus: Joi.string()
-          .valid("pending", "shipped", "delivered")
-          .required(),
+        productId: Joi.string()
+          .custom(objectIdValidator, "ObjectId validation")
+          .required()
+          .messages({
+            "any.required": "Product ID is required",
+            "any.invalid": "Invalid Product ID",
+          }),
+        quantity: Joi.number().integer().min(1).required().messages({
+          "number.base": "Quantity must be a number",
+          "number.min": "Quantity must be at least 1",
+          "any.required": "Quantity is required",
+        }),
       })
     )
     .min(1)
-    .required(),
+    .required()
+    .messages({
+      "array.base": "Items must be an array",
+      "array.min": "You must provide at least 1 item",
+      "any.required": "Items are required",
+    }),
 });
 
-// Schema for updating order status
+// Update shipping status (admin)
 const updateOrderStatusSchema = Joi.object({
   shippingStatus: Joi.string()
     .valid("pending", "shipped", "delivered")
-    .required(),
+    .required()
+    .messages({
+      "any.only": "Shipping status must be one of: pending, shipped, delivered",
+      "any.required": "Shipping status is required",
+    }),
 });
 
 module.exports = {

@@ -17,7 +17,7 @@ router.post(
 );
 
 router.patch(
-  "/:id/status",
+  "/status/:id",
   authenticate,
   restrictTo("admin"),
   validate(updateOrderStatusSchema),
@@ -39,7 +39,7 @@ router.get(
 );
 
 router.get(
-  "/my-orders",
+  "/my-orders/:orderId",
   authenticate,
   restrictTo("customer"),
   orderController.getMyOrders

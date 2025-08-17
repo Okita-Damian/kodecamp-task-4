@@ -21,15 +21,9 @@ const errorHandler = (err, req, res, next) => {
     statusCode = 400;
   }
 
-  // handle invalid ObjectId (CastError)
+  //  handle invalid ObjectId (CastError)
   if (err.name === "CastError") {
     message = `Invalid ${err.path}: ${err.value}`;
-    statusCode = 400;
-  }
-
-  //handle Joi validation errors
-  if (err.isJoi) {
-    message = err.details.map((d) => d.message).join(", ");
     statusCode = 400;
   }
 
