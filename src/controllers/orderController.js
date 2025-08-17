@@ -1,10 +1,12 @@
-const Joi = require("joi");
-const joiObjectid = require("joi-objectId")(Joi);
 const Order = require("../models/orderModel");
 const Product = require("../models/productModel");
 const asyncHandler = require("../middlewares/asyncHandler");
 const AppError = require("../utils/appError");
-const { createOrderSchema } = require("../validation/orderValidation");
+const {
+  createOrderSchema,
+  updateOrderStatusSchema,
+  getOrderSchema,
+} = require("../validation/orderValidation");
 
 // Create order (customer only)
 exports.createOrder = asyncHandler(async (req, res, next) => {
@@ -18,7 +20,7 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
   });
 
   await order.populate("items.productId");
-  x;
+
   res.status(201).json({
     status: "success",
     message: "Order created successfully",
@@ -71,13 +73,9 @@ exports.getAllOrders = asyncHandler(async (req, res) => {
   });
 });
 
-const idSchema = Joi.object({
-  id: joiObjectid().required(),
-});
-
 // Admin & customer: view a single order
 exports.getOrderById = asyncHandler(async (req, res, next) => {
-  const { error } = idSchema.validate({ id: req.params.id });
+  const { error } = getOrderSchema.validate({ id: req.params.id });
   if (error) return next(new AppError(error.message, 400));
 
   const order = await Order.findById(req.params.id)
@@ -132,24 +130,21 @@ exports.getMyOrders = asyncHandler(async (req, res) => {
 
 // Admin: update shipping status
 exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
-  const { shippingStatus } = req.body;
-  const { id } = req.params;
+  const { error, value } = updateOrderStatusSchema.validate(req.body, {
+    abortEarly: false,
+  });
+  if (error) return next(new AppError(error.details[0].message, 400));
 
-  const order = await Order.findByIdAndUpdate(
-    id,
-    { shippingStatus },
-    { new: true, runValidators: true }
-  );
+  const order = await Order.findOne({ orderId: value.orderId });
+  if (!order)
+    return next(new AppError(`No order found with ID: ${value.orderId}`, 404));
 
-  if (!order) return next(new AppError("Order not found", 404));
+  order.shippingStatus = value.shippingStatus;
+  await order.save();
 
   res.status(200).json({
-    status: "success",
+    success: true,
     message: "Order status updated successfully",
-    data: {
-      orderId: order.orderId,
-      totalOrderCost: order.totalOrderCost,
-      ...order.toObject(),
-    },
+    order,
   });
 });

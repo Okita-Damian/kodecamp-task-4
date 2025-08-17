@@ -27,6 +27,15 @@ const errorHandler = (err, req, res, next) => {
     statusCode = 400;
   }
 
+  // Handle JWT errors (optional if you use JWT auth)
+  else if (err.name === "JsonWebTokenError") {
+    message = "Invalid token. Please log in again.";
+    statusCode = 401;
+  } else if (err.name === "TokenExpiredError") {
+    message = "Your token has expired. Please log in again.";
+    statusCode = 401;
+  }
+
   res.status(statusCode).json({
     success: false,
     status: "error",

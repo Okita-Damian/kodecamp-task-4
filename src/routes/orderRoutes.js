@@ -7,6 +7,7 @@ const {
 } = require("../validation/orderValidation");
 const { authenticate, restrictTo } = require("../middlewares/auth");
 const validate = require("../middlewares/validate");
+const { getOrderSchema } = require("../validation/orderValidation");
 
 router.post(
   "/",
@@ -35,6 +36,7 @@ router.get(
   "/:id",
   authenticate,
   restrictTo("admin"),
+  validate(getOrderSchema, "params"),
   orderController.getOrderById
 );
 
