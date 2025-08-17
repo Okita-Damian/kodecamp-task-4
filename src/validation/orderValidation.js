@@ -1,12 +1,15 @@
-const Joi = require("joi");
-const objectIdValidator = require("../utils/objectIdValidator");
+// const Joi = require("joi");
+// const objectIdValidator = require("../utils/objectIdValidator");
+const BaseJoi = require("joi");
+const JoiObjectId = require("joi-objectid")(BaseJoi);
+const Joi = BaseJoi;
 
 // Create order (customer)
 const createOrderSchema = Joi.object({
   items: Joi.array()
     .items(
       Joi.object({
-        productId: Joi.string().custom(objectIdValidator).required().messages({
+        productId: Joi.string().custom(JoiObjectId).required().messages({
           "any.required": "Product ID is required",
           "any.invalid": "Invalid Product ID",
         }),

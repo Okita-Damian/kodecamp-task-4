@@ -1,10 +1,10 @@
-const objectIdValidator = (value, helpers) => {
-  const mongoose = require("mongoose");
+// const objectIdValidator = (value, helpers) => {
+//   const mongoose = require("mongoose");
 
-  if (!mongoose.Types.ObjectId.isValid(value)) {
-    return helpers.message(`"${value}" is not a valid MongoDB ObjectId`);
-  }
-  return value;
-};
+//   if (!mongoose.Types.ObjectId.isValid(value)) {
+//     return helpers.message(`"${value}" is not a valid MongoDB ObjectId`);
+//   }
+//   return value;
+// };
 
-module.exports = objectIdValidator;
+// module.exports = objectIdValidator;
