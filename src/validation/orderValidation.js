@@ -6,13 +6,10 @@ const createOrderSchema = Joi.object({
   items: Joi.array()
     .items(
       Joi.object({
-        productId: Joi.string()
-          .custom(objectIdValidator, "ObjectId validation")
-          .required()
-          .messages({
-            "any.required": "Product ID is required",
-            "any.invalid": "Invalid Product ID",
-          }),
+        productId: Joi.string().custom(objectIdValidator).required().messages({
+          "any.required": "Product ID is required",
+          "any.invalid": "Invalid Product ID",
+        }),
         quantity: Joi.number().integer().min(1).required().messages({
           "number.base": "Quantity must be a number",
           "number.min": "Quantity must be at least 1",
