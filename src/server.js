@@ -3,6 +3,9 @@ const http = require("http");
 const app = require("./index"); // Express app instance
 const connection = require("./config/db");
 const { Server } = require("socket.io");
+const { attachSocket } = require("./middlewares/socketMiddleware");
+
+// Create server
 const server = http.createServer(app);
 
 // Setup socket.io
@@ -17,49 +20,43 @@ const io = new Server(server, {
 // Track connected users
 const onlineUsers = {};
 
-app.use((req, res, next) => {
-  req.io = io;
-  req.onlineUsers = onlineUsers;
-  next();
-});
+attachSocket(io, onlineUsers);
 
+// Socket.IO events
 io.on("connection", (socket) => {
   console.log(`✅ User connected: ${socket.id}`);
 
-  // When user logs in/registers with their ID
   socket.on("register", ({ userId }) => {
+    if (!userId) return;
     onlineUsers[userId] = socket.id;
-    console.log(`🔗 User ${userId} registered with socket ${socket.id}`);
+    socket.join(userId.toString());
   });
 
-  // On disconnect, remove user
   socket.on("disconnect", () => {
     for (const userId in onlineUsers) {
       if (onlineUsers[userId] === socket.id) {
         delete onlineUsers[userId];
-        console.log(`❌ User ${userId} disconnected`);
         break;
       }
     }
   });
 });
 
-// Start server after DB connection
 const port = process.env.PORT || 3000;
 
 const startServer = async () => {
   try {
-    await connection(); // connect to MongoDB
+    await connection();
     server.listen(port, () => {
-      console.log(`🚀 Server running on port ${port} ...`);
+      console.log(`🚀🚀 server running on port ${port} ....`);
     });
   } catch (error) {
-    console.error("❌ Startup Failed:", error.message);
+    console.error("❌ Startup failed", error.message);
     process.exit(1);
   }
 };
 
 startServer();
 
-// Export so controllers can use them
+// Export io and onlineUsers so index.js can use them
 module.exports = { server, io, onlineUsers };

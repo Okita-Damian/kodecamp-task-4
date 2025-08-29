@@ -131,27 +131,26 @@ exports.getMyOrders = asyncHandler(async (req, res) => {
   });
 });
 
-// Admin: update shipping status
+// Admin: update shipping status with notification
 exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
-  const { error, value } = updateOrderStatusSchema.validate(req.body, {
-    abortEarly: false,
-  });
+  const { error, value } = updateOrderStatusSchema.validate(req.body);
   if (error) return next(new AppError(error.details[0].message, 400));
 
-  const order = await Order.findOne({ orderId: value.orderId }).populate(
-    "customerId"
-  );
+  const { orderId, shippingStatus } = value;
 
+  const order = await Order.findOne({ orderId }).populate("customerId");
   if (!order)
-    return next(new AppError(`No order found with ID: ${value.orderId}`, 404));
+    return next(new AppError(`No order found with ID: ${orderId}`, 404));
 
-  if (order.shippingStatus === value.shippingStatus) {
-    return next(new AppError(`Order is already ${value.shippingStatus}`, 400));
+  if (order.shippingStatus === shippingStatus) {
+    return next(new AppError(`Order is already ${shippingStatus}`, 400));
   }
 
-  order.shippingStatus = order.shippingStatus;
+  // Update shipping status
+  order.shippingStatus = shippingStatus;
   await order.save();
 
+  // Send notification via Socket.IO
   if (req.io && req.onlineUsers) {
     const customerId = order.customerId._id.toString();
     const socketId = req.onlineUsers[customerId];
@@ -159,8 +158,9 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     if (socketId) {
       req.io.to(socketId).emit("shippingUpdate", {
         title: "New shipping status",
-        message: `Your last order shipping status has been updated to ${shippingStatus}`,
+        message: `Your order #${orderId} shipping status has been updated to ${shippingStatus}`,
       });
+      console.log(`📣 Notified customer ${customerId} via socket`);
     }
   }
 
@@ -170,3 +170,43 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
     data: order,
   });
 });
+
+// // Admin: update shipping status
+// exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
+//   const { error, value } = updateOrderStatusSchema.validate(req.body, {
+//     abortEarly: false,
+//   });
+//   if (error) return next(new AppError(error.details[0].message, 400));
+
+//   const order = await Order.findOne({ orderId: value.orderId }).populate(
+//     "customerId"
+//   );
+
+//   if (!order)
+//     return next(new AppError(`No order found with ID: ${value.orderId}`, 404));
+
+//   if (order.shippingStatus === value.shippingStatus) {
+//     return next(new AppError(`Order is already ${value.shippingStatus}`, 400));
+//   }
+
+//   order.shippingStatus = order.shippingStatus;
+//   await order.save();
+
+//   if (req.io && req.onlineUsers) {
+//     const customerId = order.customerId._id.toString();
+//     const socketId = req.onlineUsers[customerId];
+
+//     if (socketId) {
+//       req.io.to(socketId).emit("shippingUpdate", {
+//         title: "New shipping status",
+//         message: `Your last order shipping status has been updated to ${shippingStatus}`,
+//       });
+//     }
+//   }
+
+//   res.status(200).json({
+//     status: "success",
+//     message: "Order status updated successfully",
+//     data: order,
+//   });
+// });
