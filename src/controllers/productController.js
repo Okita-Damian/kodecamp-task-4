@@ -7,8 +7,6 @@ const {
 const asyncHandler = require("../middlewares/asyncHandler");
 const AppError = require("../utils/appError");
 
-// post request for customers
-
 // Create a new product
 exports.createProduct = asyncHandler(async (req, res, next) => {
   const { error, value } = productSchema.validate(req.body);
@@ -116,44 +114,6 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
     data: result.docs,
   });
 });
-
-// Get all product by Brand
-// exports.getProductsByBrand = asyncHandler(async (req, res, next) => {
-//   const { brand, page, limit } = req.params;
-
-//   let brandFilter;
-
-//   // Check if brand is an ID or brandName
-//   if (brand.match(/^[0-9a-fA-F]{24}$/)) {
-//     brandFilter = { brand };
-//   } else {
-//     const brandDoc = await Brand.findOne({
-//       brandName: new RegExp(`^${brand}$`, "i"),
-//     });
-//     if (!brandDoc) {
-//       return next(new AppError("Brand not found", 404));
-//     }
-//     brandFilter = { brand: brandDoc._id };
-//   }
-
-//   const options = {
-//     page: parseInt(page) || 1,
-//     limit: parseInt(limit) || 10,
-//     populate: { path: "brand", select: "brandName" },
-//     sort: { createdAt: -1 },
-//   };
-
-//   const result = await Product.paginate(brandFilter, options);
-
-//   res.status(200).json({
-//     status: "success",
-//     totalDocs: result.totalDocs,
-//     totalPages: result.totalPages,
-//     currentPage: result.page,
-//     results: result.docs.length,
-//     data: result.docs,
-//   });
-// });
 
 // Get product by ID
 exports.getProductById = asyncHandler(async (req, res, next) => {

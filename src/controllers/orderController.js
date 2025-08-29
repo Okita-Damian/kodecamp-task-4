@@ -19,7 +19,10 @@ exports.createOrder = asyncHandler(async (req, res, next) => {
     items: value.items,
   });
 
-  await order.populate("items.productId");
+  await order.populate({
+    path: "items.productId",
+    select: "productName cost productImages",
+  });
 
   res.status(201).json({
     status: "success",
@@ -135,16 +138,35 @@ exports.updateOrderStatus = asyncHandler(async (req, res, next) => {
   });
   if (error) return next(new AppError(error.details[0].message, 400));
 
-  const order = await Order.findOne({ orderId: value.orderId });
+  const order = await Order.findOne({ orderId: value.orderId }).populate(
+    "customerId"
+  );
+
   if (!order)
     return next(new AppError(`No order found with ID: ${value.orderId}`, 404));
 
-  order.shippingStatus = value.shippingStatus;
+  if (order.shippingStatus === value.shippingStatus) {
+    return next(new AppError(`Order is already ${value.shippingStatus}`, 400));
+  }
+
+  order.shippingStatus = order.shippingStatus;
   await order.save();
 
+  if (req.io && req.onlineUsers) {
+    const customerId = order.customerId._id.toString();
+    const socketId = req.onlineUsers[customerId];
+
+    if (socketId) {
+      req.io.to(socketId).emit("shippingUpdate", {
+        title: "New shipping status",
+        message: `Your last order shipping status has been updated to ${shippingStatus}`,
+      });
+    }
+  }
+
   res.status(200).json({
-    success: true,
+    status: "success",
     message: "Order status updated successfully",
-    order,
+    data: order,
   });
 });
